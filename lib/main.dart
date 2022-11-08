@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 //import 'package:http/http.dart' as http;
+import "my-account.dart";
+import "login-logout.dart";
+import "settings.dart";
+
 
 final List<int> _items = List<int>.generate(51, (int index) => index);
-const List<String> list = <String>['Top Stories', 'Newest', 'Three', 'Four'];
-final List<String> entries = <String>['A', 'B', 'C'];
+const List<String> list = <String>['Top Stories', 'Newest'];
+final List<String> entries = <String>['A Story here!', 'Button', 'Comments'];
 final List<int> colorCodes = <int>[600, 500, 100];
 
 
@@ -22,6 +26,8 @@ class AppBarApp extends StatelessWidget {
         useMaterial3: true,
         //primaryColor: Color(0xFF6200EE),
       ),
+      // Decide which user to login?
+      // How to choose login screen or home screen
       home: const AppBarExample(),
     );
   }
@@ -94,11 +100,20 @@ class _AppBarExampleState extends State<AppBarExample> {
                     },
                     onSelected:(value){
                       if(value == 0){
-                        print("My account menu is selected.");
-                      }else if(value == 1){
-                        print("Settings menu is selected.");
+                        Navigator.push(
+                            context,
+                            new MaterialPageRoute(builder: (context) => new AccountPage()),
+                        );
+                      } else if(value == 1){
+                        Navigator.push(
+                          context,
+                          new MaterialPageRoute(builder: (context) => new SettingsScreen()),
+                        );
                       }else if(value == 2){
-                        print("Logout menu is selected.");
+                        Navigator.push(
+                          context,
+                          new MaterialPageRoute(builder: (context) => new LoginLogoutScreen()),
+                        );
                       }
                     }
                 ),
@@ -111,7 +126,7 @@ class _AppBarExampleState extends State<AppBarExample> {
                 return Container(
                   alignment: Alignment.center,
                   // tileColor: _items[index].isOdd ? oddItemColor : evenItemColor,
-                  margin: const EdgeInsets.symmetric(vertical: 20.0),
+                  //margin: const EdgeInsets.symmetric(vertical: 00.0),
                   height: 100.0,
                   child: ListView.separated(
                       scrollDirection: Axis.horizontal,
@@ -121,7 +136,7 @@ class _AppBarExampleState extends State<AppBarExample> {
                       return Container(
                         height: 50,
                         color: Colors.amber[colorCodes[index]],
-                        child: Center(child: Text('Entry ${entries[index]}')),
+                        child: Center(child: Text('${entries[index]}')),
                       );
                     },
                     separatorBuilder: (BuildContext context, int index) => const Divider(),

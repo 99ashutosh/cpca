@@ -26,43 +26,13 @@ class MyApp extends StatelessWidget {
       ),
       // to hide debug banner
       debugShowCheckedModeBanner: false,
-      home: FutureDemoPage(),
+      home: HomePage(),
     );
   }
 }
 
 class HomePage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text('GeeksforGeeks'),
-        ),
-        body: Center(
-          child: ElevatedButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (ctx) => FutureDemoPage(),
-              ),
-            ),
-            child: Text('Demonstrate FutureBuilder'),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
-class FutureDemoPage extends StatelessWidget {
-  /// Function that will return a
-  /// "string" after some time
-  /// To demonstrate network call
-  /// delay of [2 seconds] is used
-  ///
-  /// This function will behave as an
-  /// asynchronous function
   Future<String> getData() async {
     var url = Uri.parse('https://kontests.net/api/v1/all');
     var response = await http.get(url);

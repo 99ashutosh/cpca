@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert' as convert;
-import "my-account.dart";
+import 'package:pocketbase/pocketbase.dart';
+import "secrets.dart";
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:intl/intl.dart';
+import "homepage.dart";
 import "login-logout.dart";
-import "settings.dart";
 
-const List<String> list = <String>['KONTESTS','Top Stories', 'Newest'];
-final List<String> entries = <String>['A Story here!', 'Button', 'Comments'];
-final List<int> colorCodes = <int>[600, 500, 100];
-
+final client = PocketBase(Secrets.pocketbase_url);
 
 
 void main() => runApp(MyApp());
@@ -20,28 +18,42 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'CPCA',
       theme: ThemeData(
-        colorSchemeSeed: const Color(0xff6750a4),
+        brightness: Brightness.light,
+        //colorSchemeSeed: const Color.fromRGBO(
+        //    91, 255, 77, 1.0),
         useMaterial3: true,
-        //primaryColor: Color(0xFF6200EE),
       ),
-      // to hide debug banner
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        //colorSchemeSeed: const Color.fromRGBO(
+        //    91, 255, 77, 1.0),
+        useMaterial3: true,
+      ),
+      themeMode: ThemeMode.system,
       debugShowCheckedModeBanner: false,
-      home: HomePage(),
+      home: DummyPage(),
     );
   }
-}
+}class DummyPage extends StatelessWidget {
 
-class HomePage extends StatelessWidget {
+  Future<String?> getUserData() async {
+    var deviceInfo = DeviceInfoPlugin();
 
-  Future<String> getData() async {
-    var url = Uri.parse('https://kontests.net/api/v1/all');
-    var response = await http.get(url);
-    if (response.statusCode == 200) {
-      return response.body.toString();
-      //print({response.body});
-    }
-    return response.statusCode.toString();
+    var androidDeviceInfo = await deviceInfo.androidInfo;
+    var id = androidDeviceInfo.fingerprint;
+    final adminAuthData = await client.admins.authViaEmail(
+          Secrets.testEmail, Secrets.testPassword);
+
+    final result = await client.records.getList(
+        "users",
+        page: 1,
+        perPage: 20,
+        filter: "device_id = '$id'",
+        sort: "-created",
+    );
+    return result.toString();
   }
+
   bool shadowColor = false;
   double? scrolledUnderElevation;
 
@@ -51,62 +63,7 @@ class HomePage extends StatelessWidget {
     final Color oddItemColor = colorScheme.primary.withOpacity(0.05);
     final Color evenItemColor = colorScheme.primary.withOpacity(0.15);
     return SafeArea(
-      child: Scaffold(
-        appBar:AppBar(
-          title: const DropdownMenu(),
-          scrolledUnderElevation: scrolledUnderElevation,
-          shadowColor: shadowColor ? Theme.of(context).colorScheme.shadow : null,
-            actions: <Widget>[
-              IconButton(
-                icon: const Icon(Icons.search_rounded),
-                tooltip: 'Search',
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Search: Not implemented yet')));
-                },
-              ),
-              PopupMenuButton(
-                // add icon, by default "3 dot" icon
-                // icon: Icon(Icons.book)
-                  itemBuilder: (context){
-                    return [
-                      const PopupMenuItem<int>(
-                        value: 0,
-                        child: Text("My Account"),
-                      ),
-
-                      const PopupMenuItem<int>(
-                        value: 1,
-                        child: Text("Settings"),
-                      ),
-
-                      const PopupMenuItem<int>(
-                        value: 2,
-                        child: Text("Logout"),
-                      ),
-                    ];
-                  },
-                  onSelected:(value){
-                    if(value == 0){
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => AccountPage()),
-                      );
-                    } else if(value == 1){
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => SettingsScreen()),
-                      );
-                    }else if(value == 2){
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => LoginLogoutScreen()),
-                      );
-                    }
-                  }
-              ),
-            ]
-        ),
+      child: Scaffold (
         body: FutureBuilder(
           builder: (ctx, snapshot) {
             // Checking if future is resolved or not
@@ -116,110 +73,55 @@ class HomePage extends StatelessWidget {
                 return Center(
                   child: Text(
                     '${snapshot.error} occurred',
-                    style: TextStyle(fontSize: 18),
+                    style: const TextStyle(fontSize: 18),
                   ),
                 );
 
                 // if we got our data
               } else if (snapshot.hasData) {
-                // Extracting data from snapshot object
-                final data = snapshot.data as String;
-                var jsonResponse = convert.jsonDecode(data);
-                final List<int> _items = List<int>.generate(jsonResponse.length, (int index) => index);
-                return GridView.builder(
-                  shrinkWrap: true,
-                  itemCount: jsonResponse.length,
-                  padding: const EdgeInsets.all(8.0),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 1,
-                    childAspectRatio: 5.0,
-                    mainAxisSpacing: 10.0,
-                    crossAxisSpacing: 10.0,
-                  ),
-                  itemBuilder: (BuildContext context, int index) {
-                    return InkWell(
-                      child: Container(
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10.0),
-                          color: _items[index].isOdd ? oddItemColor : evenItemColor,
-                        ),
-                        child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children:[
-                              Row(children:[
-                                Flexible(child: Text(jsonResponse[index]['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17))),
-                              ]),
-                              Row(children:[
-                                Flexible(child: Text(jsonResponse[index]['site'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14))),
-                              ])
-                            ]),
-                      ),
-                      onTap: () async {
-                        var compUrl = Uri.parse(jsonResponse[index]['url']);
-                        if (await canLaunchUrl(compUrl)) {
-                          await launchUrl(compUrl,  mode: LaunchMode.externalApplication);
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Error has occurred')));
-                        }
-                      },
+                var jsonResponse = convert.jsonDecode(snapshot.data as String);
+                final DateTime now = DateTime.now();
+                final DateFormat formatter = DateFormat('yyyy-MM-dd');
+                final String formatted = formatter.format(now);
+                final DateTime todayTime = DateTime.parse(formatted);
+                final DateTime loginExpiry = jsonResponse['items'].length == 0 ? todayTime : DateTime.parse(jsonResponse['items'][0]['login_expiry_at']);
+
+                if (todayTime.compareTo(loginExpiry) == 0 || todayTime.compareTo(loginExpiry) > 0) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) =>
+                          LoginLogoutScreen()),
                     );
-                  },
+                  });
+                } else if (todayTime.compareTo(loginExpiry) < 0) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => HomePage()),
+                  );
+                });
+                    }
+
+
+                return Container (
+                  color: Colors.white,
                 );
               }
             }
 
             // Displaying LoadingSpinner to indicate waiting state
-            return Center(
+            return const Center(
               child: CircularProgressIndicator(),
             );
           },
 
           // Future that needs to be resolved
           // inorder to display something on the Canvas
-          future: getData(),
+          future: getUserData(),
         ),
       ),
     );
   }
 }
 
-class DropdownMenu extends StatefulWidget {
-  const DropdownMenu({super.key});
-
-  @override
-  State<DropdownMenu> createState() => _DropdownMenuState();
-}
-
-class _DropdownMenuState extends State<DropdownMenu> {
-  String dropdownValue = list.first;
-
-  @override
-  Widget build(BuildContext context) {
-    return DropdownButton<String>(
-      value: dropdownValue,
-      icon: const Icon(Icons.arrow_downward),
-      elevation: 16,
-      style: const TextStyle(color: Colors.black),
-      underline: Container(
-        height: 0,
-        color: Colors.deepPurpleAccent,
-      ),
-      onChanged: (String? value) {
-        // This is called when the user selects an item.
-        setState(() {
-          dropdownValue = value!;
-        });
-      },
-      items: list.map<DropdownMenuItem<String>>((String value) {
-        return DropdownMenuItem<String>(
-          value: value,
-          child: Text(value,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 25)),
-
-        );
-      }).toList(),
-    );
-  }
-}

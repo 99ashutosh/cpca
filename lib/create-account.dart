@@ -1,24 +1,23 @@
-import 'package:cpca/create-account.dart';
 import 'package:cpca/homepage.dart';
 import 'package:flutter/material.dart';
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:pocketbase/pocketbase.dart';
 import 'dart:io';
 import 'dart:convert' as convert;
 import 'dart:async';
+import 'package:pocketbase/pocketbase.dart';
 import "secrets.dart";
 import 'package:intl/intl.dart';
 import 'package:rounded_loading_button/rounded_loading_button.dart';
 
-final clientLog = PocketBase(Secrets.pocketbase_url);
+final clientAcc = PocketBase(Secrets.pocketbase_url);
 
-class LoginLogoutScreen extends StatefulWidget {
+class AccountCreateScreen extends StatefulWidget {
   @override
-  State<LoginLogoutScreen> createState() => LoginLogout();
+  State<AccountCreateScreen> createState() => AccountCreate();
 }
 
 
-class LoginLogout extends State<LoginLogoutScreen> {
+class AccountCreate extends State<AccountCreateScreen> {
 
   Future<String?> _getId() async {
     var deviceInfo = DeviceInfoPlugin();
@@ -31,41 +30,26 @@ class LoginLogout extends State<LoginLogoutScreen> {
     }
   }
 
-  Future<bool> login(String id, String username, String password) async {
-    final adminAuthData = await clientLog.admins.authViaEmail(Secrets.testEmail, Secrets.testPassword);
+  Future<bool> createAccount(String id, String username, String password) async {
+    final adminAuthData = await clientAcc.admins.authViaEmail(Secrets.testEmail, Secrets.testPassword);
 
     final DateTime now = DateTime.now();
     final DateTime loginExpiry = DateTime(now.year, now.month, now.day + 7);
     final DateFormat formatter = DateFormat('yyyy-MM-dd');
     final String formatted = formatter.format(loginExpiry);
 
-    final userCreds = await clientLog.records.getList(
-      "users",
-      page: 1,
-      perPage: 20,
-      filter: "device_id = '$id'",
-      sort: "-created",
-    );
-
-    var jsonResponse = convert.jsonDecode(userCreds.toString());
-
-    if (jsonResponse['totalItems'] != 0) {
-      if (jsonResponse['items'][0]['user_name'] == username &&
-          jsonResponse['items'][0]['password'] == password) {
-        final body = <String, dynamic>{
-          'login_expiry_at': DateTime.parse(formatted).toString()
-        };
-        final record = await clientLog.records.update(
-            'users', jsonResponse['items'][0]['id'], body: body);
-        _btnController.success();
-        return true;
-      }
+    final body = <String, dynamic>{'device_id': id, 'user_name': username, 'password': password, 'login_expiry_at': DateTime.parse(formatted).toString()};
+    final record = await clientAcc.records.create('users', body: body);
+    var response = convert.jsonDecode(record.toString());
+    if (response['code'] == 400 || response['code'] == 403) {
+      return false;
     }
-  return false;
+    return true;
   }
 
   TextEditingController userNameCntl = TextEditingController();
   TextEditingController passwordCntl = TextEditingController();
+  TextEditingController repasswordCntl = TextEditingController();
   final RoundedLoadingButtonController _btnController = RoundedLoadingButtonController();
 
 
@@ -106,20 +90,20 @@ class LoginLogout extends State<LoginLogoutScreen> {
                               ]),
                               const SizedBox(height: 40),
                               Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children:const [
-                                Flexible(child: Text("Log in to continue", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17))),
+                                Flexible(child: Text("Create a new account", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17))),
                               ]),
                               const SizedBox(height: 40)
                             ]),
                       ),
-                       Padding(
+                      Padding(
                         //padding: const EdgeInsets.only(left:15.0,right: 15.0,top:0,bottom: 0),
                         padding: const EdgeInsets.symmetric(horizontal: 15),
                         child: TextField(
                           controller: userNameCntl,
                           decoration: const InputDecoration(
-                              border: OutlineInputBorder(),
-                              labelText: 'User name',
-                              ),
+                            border: OutlineInputBorder(),
+                            labelText: 'User name',
+                          ),
                         ),
                       ),
                       Padding(
@@ -132,13 +116,28 @@ class LoginLogout extends State<LoginLogoutScreen> {
                           obscureText: true,
                           cursorColor: Colors.black,
                           decoration: const InputDecoration(
-                              border: OutlineInputBorder(),
-                              labelText: 'Password',
+                            border: OutlineInputBorder(),
+                            labelText: 'Password',
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(
+                            left: 15.0, right: 15.0, top: 15, bottom: 0),
+                        //padding: EdgeInsets.symmetric(horizontal: 15),
+
+                        child: TextField(
+                          controller: repasswordCntl,
+                          obscureText: true,
+                          cursorColor: Colors.black,
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            labelText: 'Retype Password',
                           ),
                         ),
                       ),
                       const SizedBox(
-                        height: 130,
+                        height: 100,
                       ),
                       RoundedLoadingButton(
                         width: 100,
@@ -148,21 +147,31 @@ class LoginLogout extends State<LoginLogoutScreen> {
                         //color: Colors.black,
                         successColor: Colors.green,
                         onPressed: () async {
-                          if (await login(device_id, userNameCntl.text.toString(), passwordCntl.text.toString())) {
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(builder: (context) =>
-                                    HomePage()),
-                              );
-                            });
+                          if (passwordCntl.text == repasswordCntl.text) {
+                            if (await createAccount(
+                                device_id, userNameCntl.text.toString(),
+                                passwordCntl.text.toString())) {
+                              _btnController.success();
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(builder: (context) =>
+                                      HomePage()),
+                                );
+                              });
+                            } else {
+                              _btnController.error();
+                              Timer(const Duration(seconds: 3), () {
+                                _btnController.reset();
+                              });
+                            }
                           } else {
                             _btnController.error();
                             Timer(const Duration(seconds: 3), () {
                               _btnController.reset();
                             });
                           }
-                        },
+                          },
                         child: const Icon(
                           Icons.arrow_forward,
                           size: 35.0,
@@ -172,22 +181,6 @@ class LoginLogout extends State<LoginLogoutScreen> {
                       const SizedBox(
                         height: 130,
                       ),
-                      ElevatedButton(
-                        style: ButtonStyle(
-                          foregroundColor: MaterialStateProperty.all<Color>(Colors.white),
-                          backgroundColor: MaterialStateProperty.all<Color>(Colors.blue),
-                        ),
-                        onPressed: () {
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(builder: (context) =>
-                                  AccountCreateScreen()),
-                            );
-                          });
-                        },
-                        child: const Text('New Here? Create an Account'),
-                      )
                     ],
                   ),
                 );

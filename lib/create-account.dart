@@ -1,4 +1,5 @@
 import 'package:cpca/homepage.dart';
+import 'package:cpca/recruiter_home.dart';
 import 'package:flutter/material.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'dart:io';
@@ -30,7 +31,7 @@ class AccountCreate extends State<AccountCreateScreen> {
     }
   }
 
-  Future<bool> createAccount(String id, String username, String password) async {
+  Future<int> createAccount(String id, String username, String password, String type) async {
     final adminAuthData = await clientAcc.admins.authViaEmail(Secrets.testEmail, Secrets.testPassword);
 
     final DateTime now = DateTime.now();
@@ -38,19 +39,27 @@ class AccountCreate extends State<AccountCreateScreen> {
     final DateFormat formatter = DateFormat('yyyy-MM-dd');
     final String formatted = formatter.format(loginExpiry);
 
-    final body = <String, dynamic>{'device_id': id, 'user_name': username, 'password': password, 'login_expiry_at': DateTime.parse(formatted).toString()};
+    final body = <String, dynamic>{'device_id': id, 'user_name': username, 'password': password,   'login_expiry_at': DateTime.parse(formatted).toString(), 'type': type.toLowerCase()};
     final record = await clientAcc.records.create('users', body: body);
     var response = convert.jsonDecode(record.toString());
     if (response['code'] == 400 || response['code'] == 403) {
-      return false;
+      return 0;
     }
-    return true;
+
+    if (type == 'programmer') {
+      return 1;
+    } else {
+      return 2;
+    }
   }
 
   TextEditingController userNameCntl = TextEditingController();
   TextEditingController passwordCntl = TextEditingController();
   TextEditingController repasswordCntl = TextEditingController();
   final RoundedLoadingButtonController _btnController = RoundedLoadingButtonController();
+
+  static const List<String> list = <String>['Programmer', 'Recruiter'];
+  String dropdownValue = list.first;
 
 
   @override
@@ -136,6 +145,36 @@ class AccountCreate extends State<AccountCreateScreen> {
                           ),
                         ),
                       ),
+                      Padding(
+                        padding: const EdgeInsets.only(
+                            left: 15.0, right: 15.0, top: 15, bottom: 0),
+                        //padding: EdgeInsets.symmetric(horizontal: 15),
+
+                        child: DropdownButton<String>(
+                          value: dropdownValue,
+                          icon: const Icon(Icons.arrow_downward),
+                          elevation: 16,
+                          style: const TextStyle(color: Colors.black),
+                          underline: Container(
+                            height: 0,
+                            color: Colors.white,
+                          ),
+                          onChanged: (String? value) {
+                            // This is called when the user selects an item.
+                            setState(() {
+                              dropdownValue = value!;
+                            });
+                          },
+                          items: list.map<DropdownMenuItem<String>>((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(value,
+                                  style: const TextStyle(fontSize: 25)),
+
+                            );
+                          }).toList(),
+                        ),
+                      ),
                       const SizedBox(
                         height: 100,
                       ),
@@ -148,15 +187,25 @@ class AccountCreate extends State<AccountCreateScreen> {
                         successColor: Colors.green,
                         onPressed: () async {
                           if (passwordCntl.text == repasswordCntl.text) {
-                            if (await createAccount(
+                            var result = await createAccount(
                                 device_id, userNameCntl.text.toString(),
-                                passwordCntl.text.toString())) {
+                                passwordCntl.text.toString(), dropdownValue.toString());
+                            if (result == 1) {
                               _btnController.success();
                               WidgetsBinding.instance.addPostFrameCallback((_) {
                                 Navigator.pushReplacement(
                                   context,
                                   MaterialPageRoute(builder: (context) =>
                                       HomePage()),
+                                );
+                              });
+                            } else if (result == 2) {
+                              _btnController.success();
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(builder: (context) =>
+                                      RecruiterPage()),
                                 );
                               });
                             } else {

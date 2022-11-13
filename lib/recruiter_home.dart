@@ -10,18 +10,25 @@ import "secrets.dart";
 import 'package:device_info_plus/device_info_plus.dart';
 import 'dart:io';
 
-final clientHome = PocketBase(Secrets.pocketbase_url);
+final clientRecruiter = PocketBase(Secrets.pocketbase_url);
 
-class HomePage extends StatelessWidget {
+class RecruiterPage extends StatelessWidget {
 
   Future<String> getData() async {
-    var url = Uri.parse('https://kontests.net/api/v1/all');
-    var response = await http.get(url);
-    if (response.statusCode == 200) {
-      return response.body.toString();
-      //print({response.body});
-    }
-    return response.statusCode.toString();
+    final adminAuthData = await clientRecruiter.admins.authViaEmail(
+        Secrets.testEmail, Secrets.testPassword);
+
+    final user_creds = await clientRecruiter.records.getList(
+      "users",
+      page: 1,
+      perPage: 20,
+      filter: "type = 'programmer'",
+      sort: "-created",
+    );
+
+    var jsonResponse = convert.jsonDecode(user_creds.toString());
+
+    return user_creds.toString();
   }
 
 
@@ -34,7 +41,7 @@ class HomePage extends StatelessWidget {
       var androidDeviceInfo = await deviceInfo.androidInfo;
       var id = androidDeviceInfo.fingerprint; // unique ID on Android
 
-      final adminAuthData = await clientHome.admins.authViaEmail(
+      final adminAuthData = await clientRecruiter.admins.authViaEmail(
           Secrets.testEmail, Secrets.testPassword);
 
       final DateTime now = DateTime.now();
@@ -42,7 +49,7 @@ class HomePage extends StatelessWidget {
       final DateFormat formatter = DateFormat('yyyy-MM-dd');
       final String formatted = formatter.format(now);
 
-      final user_creds = await clientHome.records.getList(
+      final user_creds = await clientRecruiter.records.getList(
         "users",
         page: 1,
         perPage: 20,
@@ -52,11 +59,10 @@ class HomePage extends StatelessWidget {
 
       var jsonResponse = convert.jsonDecode(user_creds.toString());
 
-
       final body = <String, dynamic>{
         'login_expiry_at': DateTime.parse(formatted).toString()
       };
-      final record = await clientHome.records.update(
+      final record = await clientRecruiter.records.update(
           'users', jsonResponse['items'][0]['id'], body: body);
     }
   }
@@ -73,15 +79,15 @@ class HomePage extends StatelessWidget {
       child: Scaffold(
         appBar:AppBar(
             title: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children:[
-              Row(children:const [
-                Flexible(child: Text('CPCA', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17))),
-              ]),
-              Row(children: const[
-                Flexible(child: Text('A KONTESTS App', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14))),
-              ])
-            ]),
+                mainAxisAlignment: MainAxisAlignment.center,
+                children:[
+                  Row(children:const [
+                    Flexible(child: Text('CPCA', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17))),
+                  ]),
+                  Row(children: const[
+                    Flexible(child: Text('A KONTESTS App', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14))),
+                  ])
+                ]),
             scrolledUnderElevation: scrolledUnderElevation,
             shadowColor: shadowColor ? Theme.of(context).colorScheme.shadow : null,
             actions: <Widget>[
@@ -146,12 +152,14 @@ class HomePage extends StatelessWidget {
                 // if we got our data
               } else if (snapshot.hasData) {
                 // Extracting data from snapshot object
-                final data = snapshot.data as String;
+                final data = snapshot.data.toString();
                 var jsonResponse = convert.jsonDecode(data);
-                final List<int> _items = List<int>.generate(jsonResponse.length, (int index) => index);
+                var userJson = jsonResponse['items'];
+                print(userJson);
+                final List<int> _items = List<int>.generate(jsonResponse['items'].length, (int index) => index);
                 return GridView.builder(
                   shrinkWrap: true,
-                  itemCount: jsonResponse.length,
+                  itemCount: jsonResponse['items'].length,
                   padding: const EdgeInsets.all(8.0),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 1,
@@ -172,25 +180,13 @@ class HomePage extends StatelessWidget {
                             children:[
                               Row(children:[
                                 Flexible(child: Padding (padding: const EdgeInsets.only(left: 5),
-                                  child: Text(jsonResponse[index]['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+                                  child: Text(userJson[index]['user_name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
                                 ),
                                 )]),
-                              Row(children:[
-                                Flexible(child: Padding (padding: const EdgeInsets.only(left: 5),
-                                child: Text(jsonResponse[index]['site'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                                )),
-                              ])
+
                             ]),
                       ),
-                      onTap: () async {
-                        var compUrl = Uri.parse(jsonResponse[index]['url']);
-                        if (await canLaunchUrl(compUrl)) {
-                          await launchUrl(compUrl,  mode: LaunchMode.externalApplication);
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Error has occurred')));
-                        }
-                      },
+                      onTap: ()  {},
                     );
                   },
                 );

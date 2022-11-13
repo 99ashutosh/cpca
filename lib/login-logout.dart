@@ -1,5 +1,6 @@
 import 'package:cpca/create-account.dart';
 import 'package:cpca/homepage.dart';
+import 'package:cpca/recruiter_home.dart';
 import 'package:flutter/material.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:pocketbase/pocketbase.dart';
@@ -31,8 +32,9 @@ class LoginLogout extends State<LoginLogoutScreen> {
     }
   }
 
-  Future<bool> login(String id, String username, String password) async {
-    final adminAuthData = await clientLog.admins.authViaEmail(Secrets.testEmail, Secrets.testPassword);
+  Future<int> login(String id, String username, String password) async {
+    final adminAuthData = await clientLog.admins.authViaEmail(
+        Secrets.testEmail, Secrets.testPassword);
 
     final DateTime now = DateTime.now();
     final DateTime loginExpiry = DateTime(now.year, now.month, now.day + 7);
@@ -52,17 +54,29 @@ class LoginLogout extends State<LoginLogoutScreen> {
     if (jsonResponse['totalItems'] != 0) {
       if (jsonResponse['items'][0]['user_name'] == username &&
           jsonResponse['items'][0]['password'] == password) {
-        final body = <String, dynamic>{
-          'login_expiry_at': DateTime.parse(formatted).toString()
-        };
-        final record = await clientLog.records.update(
-            'users', jsonResponse['items'][0]['id'], body: body);
-        _btnController.success();
-        return true;
+        if (jsonResponse['items'][0]['type'] == 'programmer') {
+          final body = <String, dynamic>{
+            'login_expiry_at': DateTime.parse(formatted).toString()
+          };
+          final record = await clientLog.records.update(
+              'users', jsonResponse['items'][0]['id'], body: body);
+          _btnController.success();
+          return 1;
+        } else {
+          final body = <String, dynamic>{
+            'login_expiry_at': DateTime.parse(formatted).toString()
+          };
+          final record = await clientLog.records.update(
+              'users', jsonResponse['items'][0]['id'], body: body);
+          _btnController.success();
+          return 2;
+        }
       }
     }
-  return false;
+    return 0;
   }
+
+
 
   TextEditingController userNameCntl = TextEditingController();
   TextEditingController passwordCntl = TextEditingController();
@@ -148,12 +162,20 @@ class LoginLogout extends State<LoginLogoutScreen> {
                         //color: Colors.black,
                         successColor: Colors.green,
                         onPressed: () async {
-                          if (await login(device_id, userNameCntl.text.toString(), passwordCntl.text.toString())) {
+                          if (await login(device_id, userNameCntl.text.toString(), passwordCntl.text.toString()) == 1) {
                             WidgetsBinding.instance.addPostFrameCallback((_) {
                               Navigator.pushReplacement(
                                 context,
                                 MaterialPageRoute(builder: (context) =>
                                     HomePage()),
+                              );
+                            });
+                          }else if (await login(device_id, userNameCntl.text.toString(), passwordCntl.text.toString()) == 2) {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(builder: (context) =>
+                                    RecruiterPage()),
                               );
                             });
                           } else {

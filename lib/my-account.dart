@@ -8,7 +8,7 @@ import 'dart:async';
 import "secrets.dart";
 import 'package:rounded_loading_button/rounded_loading_button.dart';
 
-final client = PocketBase(Secrets.pocketbase_url);
+final clientAcc = PocketBase(Secrets.pocketbase_url);
 
 class AccountPage extends StatefulWidget {
   @override
@@ -26,8 +26,8 @@ class AccountPageS extends State<AccountPage> {
     } else if(Platform.isAndroid) {
       var androidDeviceInfo = await deviceInfo.androidInfo;
       var deviceId = androidDeviceInfo.fingerprint; // unique ID on Android
-      final adminAuthData = await client.admins.authViaEmail(Secrets.testEmail, Secrets.testPassword);
-      final userCreds = await client.records.getList(
+      final adminAuthData = await clientAcc.admins.authViaEmail(Secrets.testEmail, Secrets.testPassword);
+      final userCreds = await clientAcc.records.getList(
         "users",
         page: 1,
         perPage: 20,

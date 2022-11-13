@@ -6,6 +6,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:intl/intl.dart';
 import "homepage.dart";
 import "login-logout.dart";
+import "recruiter_home.dart";
 
 final client = PocketBase(Secrets.pocketbase_url);
 
@@ -94,16 +95,21 @@ class MyApp extends StatelessWidget {
                           LoginLogoutScreen()),
                     );
                   });
-                } else if (todayTime.compareTo(loginExpiry) < 0) {
+                } else if (todayTime.compareTo(loginExpiry) < 0 && jsonResponse['items'][0]['type'] == 'programmer') {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (context) => HomePage()),
                   );
                 });
-                    }
-
-
+                } else {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => RecruiterPage()),
+                    );
+                  });
+                }
                 return Container (
                   color: Colors.white,
                 );

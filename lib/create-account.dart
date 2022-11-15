@@ -46,7 +46,7 @@ class AccountCreate extends State<AccountCreateScreen> {
       return 0;
     }
 
-    if (type == 'programmer') {
+    if (type.toLowerCase() == 'programmer') {
       return 1;
     } else {
       return 2;
@@ -111,7 +111,7 @@ class AccountCreate extends State<AccountCreateScreen> {
                           controller: userNameCntl,
                           decoration: const InputDecoration(
                             border: OutlineInputBorder(),
-                            labelText: 'User name',
+                            labelText: 'Enter Linkedin Username',
                           ),
                         ),
                       ),

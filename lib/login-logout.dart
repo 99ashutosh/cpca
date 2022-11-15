@@ -132,7 +132,7 @@ class LoginLogout extends State<LoginLogoutScreen> {
                           controller: userNameCntl,
                           decoration: const InputDecoration(
                               border: OutlineInputBorder(),
-                              labelText: 'User name',
+                              labelText: 'Linkedin Username',
                               ),
                         ),
                       ),

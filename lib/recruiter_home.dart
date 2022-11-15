@@ -163,6 +163,7 @@ class RecruiterPage extends StatelessWidget {
                   padding: const EdgeInsets.all(8.0),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 1,
+                    
                     childAspectRatio: 5.0,
                     mainAxisSpacing: 10.0,
                     crossAxisSpacing: 10.0,
@@ -186,7 +187,15 @@ class RecruiterPage extends StatelessWidget {
 
                             ]),
                       ),
-                      onTap: ()  {},
+                      onTap: () async {
+                        var compUrl = Uri.parse("https://www.linkedin.com/in/" + userJson[index]['user_name'] + '/');
+                        if (await canLaunchUrl(compUrl)) {
+                          await launchUrl(compUrl,  mode: LaunchMode.externalApplication);
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Error has occurred')));
+                        }
+                      },
                     );
                   },
                 );

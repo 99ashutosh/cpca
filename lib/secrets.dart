@@ -1,5 +1,5 @@
 class Secrets {
   static const testEmail = 'test@test.com';
   static const testPassword = 'test-password';
-  static const pocketbase_url = 'https://68f0-171-76-80-148.in.ngrok.io';
+  static const pocketbase_url = 'https://35c7-61-12-83-162.in.ngrok.io';
 }

@@ -85,14 +85,6 @@ class HomePage extends StatelessWidget {
             scrolledUnderElevation: scrolledUnderElevation,
             shadowColor: shadowColor ? Theme.of(context).colorScheme.shadow : null,
             actions: <Widget>[
-              IconButton(
-                icon: const Icon(Icons.search_rounded),
-                tooltip: 'Search',
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Search: Not implemented yet')));
-                },
-              ),
               PopupMenuButton(
                 // add icon, by default "3 dot" icon
                 // icon: Icon(Icons.book)

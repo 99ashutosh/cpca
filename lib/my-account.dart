@@ -41,9 +41,9 @@ class AccountPageS extends State<AccountPage> {
     }
   }
 
-  TextEditingController userNameCntl = TextEditingController();
-  TextEditingController passwordCntl = TextEditingController();
-  final RoundedLoadingButtonController _btnController = RoundedLoadingButtonController();
+  // TextEditingController userNameCntl = TextEditingController();
+  // TextEditingController passwordCntl = TextEditingController();
+  // final RoundedLoadingButtonController _btnController = RoundedLoadingButtonController();
 
 
   @override
@@ -83,7 +83,7 @@ class AccountPageS extends State<AccountPage> {
                               ]),
                               const SizedBox(height: 130),
                               Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children:const [
-                                Flexible(child: Text("Username: ", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 19))),
+                                Flexible(child: Text("Linkedin Username: ", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 19))),
                               ]),
                               Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
                                 Flexible(child: Text( jsonResponse['items'][0]['user_name'] , style: TextStyle(fontWeight: FontWeight.bold, fontSize: 50))),
